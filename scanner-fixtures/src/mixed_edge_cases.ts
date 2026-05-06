@@ -1,5 +1,6 @@
 /**
- * MIXED fixtures — tricky REAL vs DECOY pairings (OpenAI, Anthropic, Gemini only).
+ * Like a real repo file: real provider calls mixed with ordinary config and types.
+ * For scanning GitHub — useful shapes (env model, try/catch, etc.), not decoy games.
  */
 
 import OpenAI from "openai";
@@ -8,23 +9,18 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const runtimeModel = process.env.MIXED_EDGE_MODEL ?? "gpt-4o-mini";
 
-// REAL: OpenAI chat completion with nested `messages` arrays inside content parts (multimodal-ish shape)
+// --- Real calls (same providers as the rest of the fixtures) ---
+
 export async function nestedMessagesOpenAI() {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   return openai.chat.completions.create({
     model: runtimeModel,
     messages: [
-      {
-        role: "system",
-        content: "You compare two drafts and pick the safer one.",
-      },
+      { role: "system", content: "You compare two drafts and pick the safer one." },
       {
         role: "user",
         content: [
-          {
-            type: "text",
-            text: "Draft A vs Draft B",
-          },
+          { type: "text", text: "Draft A vs Draft B" },
           {
             type: "text",
             text: JSON.stringify({
@@ -40,7 +36,6 @@ export async function nestedMessagesOpenAI() {
   });
 }
 
-// REAL: Anthropic messages.create (variable model + multi-line system)
 export async function anthropicMixedVariableModel() {
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const model = process.env.MIXED_ANTHROPIC_MODEL ?? "claude-3-5-sonnet-latest";
@@ -57,7 +52,6 @@ export async function anthropicMixedVariableModel() {
   });
 }
 
-// REAL: Gemini generateContent inside same file as decoys
 export async function geminiMixedGenerateContent() {
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
   const model = genAI.getGenerativeModel({
@@ -69,17 +63,6 @@ export async function geminiMixedGenerateContent() {
   return out.response.text();
 }
 
-// DECOY: local object named `openai` with `.responses.create` — not the SDK import
-export async function fakeOpenaiShadowing() {
-  const openai = {
-    responses: {
-      create: async (_args: unknown) => ({ local: true }),
-    },
-  };
-  return openai.responses.create({ model: "not-real" });
-}
-
-// REAL: model passed via variable (scanner must not require string literals only)
 export async function modelFromVariable() {
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const chosen = runtimeModel;
@@ -90,7 +73,6 @@ export async function modelFromVariable() {
   });
 }
 
-// REAL: call inside try/catch with logging side effects
 export async function wrappedWithTryCatch() {
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   try {
@@ -104,14 +86,12 @@ export async function wrappedWithTryCatch() {
   }
 }
 
-// REAL: returned directly without intermediate const (expression body async arrow)
 export const immediateReturnOpenAI = () =>
   new OpenAI({ apiKey: process.env.OPENAI_API_KEY }).chat.completions.create({
     model: runtimeModel,
     messages: [{ role: "user", content: "Say ‘pong’." }],
   });
 
-// REAL: assigned to const then returned (common refactor shape)
 export async function assignedToConst() {
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const completion = await client.chat.completions.create({
@@ -124,21 +104,6 @@ export async function assignedToConst() {
   return completion;
 }
 
-// DECOY: “call” only appears inside a markdown code fence stored as a string
-export const markdownStringTrap = `
-## Safe rollback script
-
-\`\`\`ts
-import OpenAI from "openai";
-await new OpenAI({ apiKey: process.env.OPENAI_API_KEY }).chat.completions.create({
-  model: "gpt-4o-mini",
-  messages: [{ role: "user", content: "This is not executed; it's documentation." }],
-});
-\`\`\`
-`;
-
-// DECOY: prose that mentions Anthropic chains without invoking the SDK here
-export const releaseNotes = [
-  "Renamed docs section: messages.create troubleshooting (no SDK in this repo path).",
-  "Claude model strings are centralized in anthropic_constants.ts.",
-].join(" ");
+// Ordinary constant in the same file — mentions a provider key, no API usage
+export const README_ENV_HINT =
+  "For local runs, export OPENAI_API_KEY (see .env.example).";

@@ -1,142 +1,52 @@
 """
-DECOY fixtures — Python patterns that resemble OpenAI / Anthropic / Gemini but are false positives.
+Benign examples for an LLM-call scanner: normal Python that touches the same
+vocabulary (models, env, provider names) without calling provider APIs.
 """
 
 from __future__ import annotations
 
-import json
-import re
-import unittest.mock
+import os
 from dataclasses import dataclass
 from typing import Any
 
 
-# DECOY: string mentions dotted API path (policy / grep bait)
-FORBIDDEN_SNIPPET = "Some interns paste client.chat.completions.create without reviewing."
-
-# DECOY: comment referring to Anthropic API (not an invocation)
-# NOTE: In prod we standardize on Anthropic messages.create for tool-use — see RFC-42.
-
-
-# DECOY: local helper named like Gemini SDK surface (not google.generativeai)
-def generate_content(prompt: str) -> str:
-    return f"NOT_LLM:{prompt}"
-
-
-# DECOY: dict includes model key but no HTTP client / SDK call
-MODEL_REGISTRY = {
-    "router": {"model": "gpt-4o", "cost_class": "high"},
-    "fallback": {"model": "gpt-4o-mini", "cost_class": "low"},
-    "vision": {"model": "gemini-2.0-flash", "cost_class": "med"},
+# Feature config or DB seed data — model ids only, no client
+DEFAULT_MODEL_BY_USE_CASE: dict[str, str] = {
+    "chat": "gpt-4o-mini",
+    "long_context": "claude-sonnet-4-20250514",
+    "batch": "gemini-2.0-flash",
 }
 
 
-# DECOY: mock class that mimics Anthropic client naming
-class FakeAnthropic:
-    class Messages:
-        @staticmethod
-        def create(**kwargs: Any) -> dict[str, Any]:
-            return {"type": "fixture", "kwargs_keys": sorted(kwargs.keys())}
+@dataclass
+class ModelDeployment:
+    """Internal name for a deployed scoring model (not necessarily an LLM)."""
 
-    messages = Messages()
-
-
-def build_fake_client() -> FakeAnthropic:
-    return FakeAnthropic()
+    name: str
+    version: str
+    runtime: str
 
 
-# DECOY: unittest.mock patching strings for CI
-def test_scanner_does_not_match_patch_strings() -> None:
-    patch_target = "openai.resources.chat.completions.Completions.create"
-    assert "Completions.create" in patch_target
+deployment = ModelDeployment(name="recommendations-v2", version="1.3.0", runtime="cpu")
 
 
-# DECOY: triple-quoted documentation embedded in constant
-DOCS_FOOTER = '''
-Developer hint:
-    client.messages.create(...)
-is not automatically audited — instrument wrappers instead.
-'''
+# Typical settings module pattern
+def load_optional_openai_base_url() -> str | None:
+    return os.getenv("OPENAI_BASE_URL")
 
 
-# DECOY: JSON blob describing endpoints (not executable calls)
-OPENAPI_LIKE = json.dumps(
-    {
-        "paths": {
-            "/v1/chat/completions": {"post": {"operationId": "chat_completions_create"}},
-            "/v1/responses": {"post": {"operationId": "responses_create"}},
-            "/v1beta/models/{model}:generateContent": {"post": {"operationId": "gemini_gen"}},
-        }
-    }
-)
+# Static API response fixture for tests (no network)
+STUB_CHAT_COMPLETION_JSON: dict[str, Any] = {
+    "id": "stub",
+    "object": "chat.completion",
+    "model": "gpt-4o-mini",
+    "choices": [{"index": 0, "message": {"role": "assistant", "content": "ok"}}],
+}
 
 
-# DECOY: regex scanning for banned identifiers (Gemini module path as string only)
-_PATTERN = re.compile(r"google\.generativeai\.GenerativeModel")
-
-
-# DECOY: dataclass pretending to configure LLM but never imported SDK
-@dataclass(frozen=True)
-class LlmRoute:
-    provider: str
-    model: str
-    temperature: float
-
-
-DEFAULT_ROUTE = LlmRoute(provider="openai", model="gpt-4.1-mini", temperature=0.2)
-
-
-# DECOY: pytest-style autospec mock
-def demo_mock_autospec() -> unittest.mock.MagicMock:
-    return unittest.mock.create_autospec(spec=["messages"], instance=True)
-
-
-# DECOY: f-string template for internal wiki (no API)
-WIKI_SNIPPET = f"""
-Set OPENAI_API_KEY in `{process_env_placeholder()}` for local dev.
-"""
-
-
-def process_env_placeholder() -> str:
-    return ".env.local"
-
-
-# DECOY: list comprehension building “prompt-like” strings from CSV headers
-HEADERS = ["sku", "qty", "model"]
-FAKE_PROMPTS = [f"column:{h}" for h in HEADERS]
-
-
-# DECOY: type alias referencing external symbols without importing them
-OpenAIClient = Any  # noqa: UP007 — intentional fuzz for scanners
-
-
-# DECOY: function returning schema-only payload (no network)
-def export_prompt_catalog() -> dict[str, Any]:
-    return {
-        "entries": [
-            {
-                "id": "summarize",
-                "template": "Summarize: {{text}}",
-                "recommended_model": "claude-3-5-haiku-latest",
-            },
-            {
-                "id": "tag",
-                "template": "Tags for: {{text}}",
-                "recommended_model": "gemini-2.0-flash",
-            },
-        ]
-    }
-
-
-# DECOY: comment bait — sounds like an SDK call but is documentation
-# GenerativeModel(...).generate_content is wrapped in our gateway; do not grep raw.
-
-
-# DECOY: dynamic getattr toy object
-class DynamicFacade:
-    def __getattr__(self, name: str) -> Any:
-        return lambda **_kw: {"called": name}
-
-
-facade = DynamicFacade()
-_ = facade.chat_completions_create
+# Prompt templates stored as data (common before any client is invoked)
+PROMPT_LIBRARY_ENTRY = {
+    "id": "incident_summary",
+    "template": "Summarize this incident for execs:\n\n{{text}}",
+    "suggested_model": "claude-3-5-haiku-latest",
+}

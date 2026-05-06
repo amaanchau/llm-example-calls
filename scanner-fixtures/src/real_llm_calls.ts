@@ -1,6 +1,6 @@
 /**
- * REAL LLM call fixtures — OpenAI, Anthropic, and Gemini only.
- * API keys: use process.env only (no literals).
+ * Example LLM call sites — OpenAI, Anthropic, Gemini only (for scanning Git repos).
+ * API keys via process.env only (no literals).
  */
 
 import OpenAI from "openai";
