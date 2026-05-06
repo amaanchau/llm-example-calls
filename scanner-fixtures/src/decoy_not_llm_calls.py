@@ -1,5 +1,5 @@
 """
-DECOY fixtures — Python patterns that resemble LLM integrations but are false positives.
+DECOY fixtures — Python patterns that resemble OpenAI / Anthropic / Gemini but are false positives.
 """
 
 from __future__ import annotations
@@ -7,6 +7,7 @@ from __future__ import annotations
 import json
 import re
 import unittest.mock
+from dataclasses import dataclass
 from typing import Any
 
 
@@ -17,7 +18,7 @@ FORBIDDEN_SNIPPET = "Some interns paste client.chat.completions.create without r
 # NOTE: In prod we standardize on Anthropic messages.create for tool-use — see RFC-42.
 
 
-# DECOY: local helper named like Gemini SDK surface
+# DECOY: local helper named like Gemini SDK surface (not google.generativeai)
 def generate_content(prompt: str) -> str:
     return f"NOT_LLM:{prompt}"
 
@@ -26,6 +27,7 @@ def generate_content(prompt: str) -> str:
 MODEL_REGISTRY = {
     "router": {"model": "gpt-4o", "cost_class": "high"},
     "fallback": {"model": "gpt-4o-mini", "cost_class": "low"},
+    "vision": {"model": "gemini-2.0-flash", "cost_class": "med"},
 }
 
 
@@ -63,19 +65,17 @@ OPENAPI_LIKE = json.dumps(
         "paths": {
             "/v1/chat/completions": {"post": {"operationId": "chat_completions_create"}},
             "/v1/responses": {"post": {"operationId": "responses_create"}},
+            "/v1beta/models/{model}:generateContent": {"post": {"operationId": "gemini_gen"}},
         }
     }
 )
 
 
-# DECOY: regex scanning for banned identifiers
-_PATTERN = re.compile(r"langchain\.chat_models\.ChatOpenAI")
+# DECOY: regex scanning for banned identifiers (Gemini module path as string only)
+_PATTERN = re.compile(r"google\.generativeai\.GenerativeModel")
 
 
 # DECOY: dataclass pretending to configure LLM but never imported SDK
-from dataclasses import dataclass
-
-
 @dataclass(frozen=True)
 class LlmRoute:
     provider: str
@@ -118,13 +118,18 @@ def export_prompt_catalog() -> dict[str, Any]:
                 "id": "summarize",
                 "template": "Summarize: {{text}}",
                 "recommended_model": "claude-3-5-haiku-latest",
-            }
+            },
+            {
+                "id": "tag",
+                "template": "Tags for: {{text}}",
+                "recommended_model": "gemini-2.0-flash",
+            },
         ]
     }
 
 
-# DECOY: mention LlamaIndex in a comment only
-# query_engine.query(...) should be wrapped by our observability layer.
+# DECOY: comment bait — sounds like an SDK call but is documentation
+# GenerativeModel(...).generate_content is wrapped in our gateway; do not grep raw.
 
 
 # DECOY: dynamic getattr toy object

@@ -1,14 +1,10 @@
 /**
- * REAL LLM call fixtures — intentionally messy / scanner stress-test shapes.
+ * REAL LLM call fixtures — OpenAI, Anthropic, and Gemini only.
  * API keys: use process.env only (no literals).
  */
 
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
-import { generateText, streamText, generateObject, streamObject } from "ai";
-import { openai as vercelOpenAI } from "@ai-sdk/openai";
-import { z } from "zod";
-import { ChatOpenAI } from "@langchain/openai";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { GoogleGenAI } from "@google/genai";
 
@@ -76,96 +72,6 @@ export async function anthropicMessagesCreate() {
     ],
   });
   return response;
-}
-
-// REAL: Vercel AI SDK — generateText
-export async function vercelGenerateText() {
-  const { text } = await generateText({
-    model: vercelOpenAI(selectedModel),
-    system: "You are a careful reviewer.",
-    prompt: [
-      "Review this diff for security issues:",
-      "```diff",
-      "+ eval(userInput)",
-      "```",
-    ].join("\n"),
-    temperature: 0,
-  });
-  return text;
-}
-
-// REAL: Vercel AI SDK — streamText
-export async function vercelStreamText() {
-  const result = streamText({
-    model: vercelOpenAI(process.env.STREAM_MODEL ?? "gpt-4o-mini"),
-    messages: [
-      { role: "system", content: "Stream tokens quickly; no preamble." },
-      { role: "user", content: "Write a short bedtime story about a fox." },
-    ],
-    maxRetries: 2,
-  });
-  let acc = "";
-  for await (const delta of result.textStream) acc += delta;
-  return acc;
-}
-
-// REAL: Vercel AI SDK — generateObject
-export async function vercelGenerateObject() {
-  const schema = z.object({
-    title: z.string(),
-    severity: z.enum(["low", "med", "high"]),
-    rationale: z.string(),
-  });
-  const { object } = await generateObject({
-    model: vercelOpenAI("gpt-4o"),
-    schema,
-    prompt: "Classify this incident:\n\nDB outage affecting checkout.",
-  });
-  return object;
-}
-
-// REAL: Vercel AI SDK — streamObject
-export async function vercelStreamObject() {
-  const rowSchema = z.object({ sku: z.string(), qty: z.number().int().positive() });
-  const result = streamObject({
-    model: vercelOpenAI(selectedModel),
-    schema: z.object({ rows: z.array(rowSchema) }),
-    prompt:
-      "Parse the following messy inventory lines into structured rows:\n\n" +
-      "widget-a x2\n" +
-      "widget-b (qty 10)",
-  });
-  const collected: unknown[] = [];
-  for await (const partial of result.partialObjectStream) collected.push(partial);
-  return collected;
-}
-
-// REAL: LangChain JS — ChatOpenAI + invoke
-export async function langchainChatOpenAIInvoke() {
-  const model = new ChatOpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-    modelName: process.env.LC_MODEL ?? "gpt-4o-mini",
-    temperature: 0.1,
-  });
-  const out = await model.invoke([
-    ["system", "You translate to French."],
-    ["human", "Ship it Friday."],
-  ]);
-  return out;
-}
-
-// REAL: LangChain JS — model.invoke (alternate message shape)
-export async function langchainInvokeStructuredPrompt() {
-  const lcModel = new ChatOpenAI({
-    openAIApiKey: process.env.OPENAI_API_KEY,
-    model: "gpt-4.1-mini",
-  });
-  return lcModel.invoke({
-    role: "user",
-    content: [
-      { type: "text", text: "Give me 3 release notes bullets for commit abc123." },
-    ],
-  });
 }
 
 // REAL: Google Gemini JS (@google/generative-ai) — model.generateContent
@@ -251,19 +157,36 @@ export async function openaiChatMultiTurnRouter() {
   });
 }
 
-// REAL: Vercel AI SDK — generateText (tools / multi-step)
-export async function vercelGenerateTextWithTools() {
-  const { text } = await generateText({
-    model: vercelOpenAI("gpt-4o-mini"),
-    tools: {
-      weather: {
-        description: "Get weather for a city",
-        parameters: z.object({ city: z.string() }),
-        execute: async ({ city }) => ({ city, unit: "c", value: 21 }),
-      },
-    },
-    prompt: `What's the weather in ${"Paris"}? Use the tool if needed.`,
-    maxSteps: 3,
+// REAL: OpenAI JS SDK — chat.completions.create (streaming)
+export async function openaiChatCompletionStream() {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const stream = await openai.chat.completions.create({
+    model: process.env.OPENAI_STREAM_MODEL ?? "gpt-4o-mini",
+    messages: [{ role: "user", content: "Three short tips for structured logging." }],
+    stream: true,
   });
-  return text;
+  let acc = "";
+  for await (const chunk of stream) {
+    const piece = chunk.choices[0]?.delta?.content;
+    if (piece) acc += piece;
+  }
+  return acc;
+}
+
+// REAL: Anthropic JS SDK — messages.create (alternate model env)
+export async function anthropicHaikuQuickReply() {
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  return client.messages.create({
+    model: process.env.ANTHROPIC_FAST_MODEL ?? "claude-3-5-haiku-latest",
+    max_tokens: 256,
+    system: "One sentence answers only.",
+    messages: [{ role: "user", content: "What is a circuit breaker?" }],
+  });
+}
+
+// REAL: Google Gemini JS (@google/generative-ai) — generateContent with string shorthand
+export async function geminiGenerateContentStringPrompt() {
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
+  return model.generateContent("List two signs of DB connection pool exhaustion.");
 }

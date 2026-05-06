@@ -1,10 +1,10 @@
 /**
- * MIXED fixtures — intentionally tricky REAL vs DECOY pairings for scanner robustness.
+ * MIXED fixtures — tricky REAL vs DECOY pairings (OpenAI, Anthropic, Gemini only).
  */
 
 import OpenAI from "openai";
-import { streamText } from "ai";
-import { openai as vercelOpenAI } from "@ai-sdk/openai";
+import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const runtimeModel = process.env.MIXED_EDGE_MODEL ?? "gpt-4o-mini";
 
@@ -40,18 +40,33 @@ export async function nestedMessagesOpenAI() {
   });
 }
 
-// REAL: Vercel AI SDK streamText (explicit await on stream conclusion)
-export async function vercelStreamTextMixed() {
-  const result = streamText({
-    model: vercelOpenAI(runtimeModel),
+// REAL: Anthropic messages.create (variable model + multi-line system)
+export async function anthropicMixedVariableModel() {
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const model = process.env.MIXED_ANTHROPIC_MODEL ?? "claude-3-5-sonnet-latest";
+  return client.messages.create({
+    model,
+    max_tokens: 600,
+    system: ["You prioritize security.", "No markdown tables."].join("\n"),
     messages: [
-      { role: "system", content: "Keep answers under 80 words." },
-      { role: "user", content: "Explain idempotency keys for payments APIs." },
+      {
+        role: "user",
+        content: [{ type: "text", text: "Review this nginx snippet for SSRF pitfalls." }],
+      },
     ],
   });
-  let full = "";
-  for await (const delta of result.textStream) full += delta;
-  return full;
+}
+
+// REAL: Gemini generateContent inside same file as decoys
+export async function geminiMixedGenerateContent() {
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
+  const model = genAI.getGenerativeModel({
+    model: process.env.MIXED_GEMINI_MODEL ?? "gemini-2.0-flash",
+  });
+  const out = await model.generateContent({
+    contents: [{ role: "user", parts: [{ text: "One tip for canary analysis." }] }],
+  });
+  return out.response.text();
 }
 
 // DECOY: local object named `openai` with `.responses.create` — not the SDK import
@@ -122,8 +137,8 @@ await new OpenAI({ apiKey: process.env.OPENAI_API_KEY }).chat.completions.create
 \`\`\`
 `;
 
-// DECOY: template expression concatenation bait — still just prose for humans
+// DECOY: prose that mentions Anthropic chains without invoking the SDK here
 export const releaseNotes = [
-  "We renamed internal helper streamText() → streamTokens() to avoid confusion",
-  "with the AI SDK export streamText(...).",
+  "Renamed docs section: messages.create troubleshooting (no SDK in this repo path).",
+  "Claude model strings are centralized in anthropic_constants.ts.",
 ].join(" ");

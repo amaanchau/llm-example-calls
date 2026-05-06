@@ -1,5 +1,5 @@
 """
-REAL LLM call fixtures for scanner validation.
+REAL LLM call fixtures for scanner validation — OpenAI, Anthropic, and Gemini only.
 Uses env placeholders only — never embed secrets.
 """
 
@@ -11,10 +11,6 @@ from typing import Any
 
 from anthropic import Anthropic
 from google import generativeai as genai
-from langchain_openai import ChatOpenAI
-from llama_index.core import Document
-from llama_index.core import Settings
-from llama_index.core import VectorStoreIndex
 from openai import OpenAI
 
 
@@ -100,43 +96,6 @@ def anthropic_messages_create() -> Any:
     )
 
 
-# REAL: LangChain Python — ChatOpenAI(...)
-def langchain_chat_openai_invoke() -> Any:
-    llm = ChatOpenAI(
-        api_key=_env("OPENAI_API_KEY"),
-        model=_env("LANGCHAIN_MODEL", "gpt-4o-mini"),
-        temperature=0.0,
-    )
-    return llm.invoke(
-        [
-            ("system", "Return SQL only; no prose."),
-            ("human", "Tables: users(id), orders(user_id). Last 7 days revenue?"),
-        ]
-    )
-
-
-# REAL: LangChain Python — llm.invoke(...)
-def langchain_invoke_with_messages_dict() -> Any:
-    llm = ChatOpenAI(
-        openai_api_key=_env("OPENAI_API_KEY"),
-        model_name="gpt-4.1-mini",
-    )
-    return llm.invoke(
-        [
-            {
-                "role": "system",
-                "content": "You write terse commit messages.",
-            },
-            {
-                "role": "user",
-                "content": json.dumps(
-                    {"files": ["auth.ts", "middleware.ts"], "intent": "fix token leak"}
-                ),
-            },
-        ]
-    )
-
-
 # REAL: Google Gemini Python — model.generate_content(...)
 def gemini_generate_content() -> Any:
     genai.configure(api_key=_env("GEMINI_API_KEY"))
@@ -155,20 +114,6 @@ def gemini_generate_content() -> Any:
             "temperature": 0.4,
             "max_output_tokens": 512,
         },
-    )
-
-
-# REAL: LlamaIndex — query_engine.query(...)
-def llamaindex_query_engine_query() -> Any:
-    Settings.llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
-    docs = [
-        Document(text="Our refund policy allows 30-day returns."),
-        Document(text="International orders may incur customs fees."),
-    ]
-    index = VectorStoreIndex.from_documents(docs)
-    query_engine = index.as_query_engine(similarity_top_k=2)
-    return query_engine.query(
-        "Can EU customers return after 45 days?\nCite the docs."
     )
 
 
@@ -244,6 +189,43 @@ def openai_responses_second_call() -> Any:
     )
 
 
+# REAL: OpenAI Python SDK — chat.completions.create (streaming iterator)
+def openai_chat_completion_stream() -> Any:
+    client = OpenAI(api_key=_env("OPENAI_API_KEY"))
+    stream = client.chat.completions.create(
+        model=_env("OPENAI_STREAM_MODEL", "gpt-4o-mini"),
+        messages=[
+            {"role": "user", "content": "One paragraph on graceful degradation."}
+        ],
+        stream=True,
+    )
+    chunks: list[str] = []
+    for event in stream:
+        delta = event.choices[0].delta.content
+        if delta:
+            chunks.append(delta)
+    return "".join(chunks)
+
+
+# REAL: Anthropic Python SDK — messages.create (minimal user string content)
+def anthropic_messages_plain_string_user_content() -> Any:
+    client = Anthropic(api_key=_env("ANTHROPIC_API_KEY"))
+    return client.messages.create(
+        model=_env("ANTHROPIC_MODEL_MINI", "claude-3-5-haiku-latest"),
+        max_tokens=512,
+        messages=[{"role": "user", "content": "Define SLA vs SLO in one sentence each."}],
+    )
+
+
+# REAL: Google Gemini Python — generate_content (string prompt shorthand)
+def gemini_generate_content_string_shorthand() -> Any:
+    genai.configure(api_key=_env("GEMINI_API_KEY"))
+    m = genai.GenerativeModel(_env("GEMINI_FLASH_MODEL", "gemini-2.0-flash"))
+    return m.generate_content(
+        "Name two metrics to watch during a Postgres major version upgrade.",
+        generation_config={"temperature": 0.3},
+    )
+
+
 if __name__ == "__main__":
-    # Intentionally empty — fixtures are not executed in CI here.
     pass

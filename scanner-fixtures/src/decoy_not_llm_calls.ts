@@ -1,9 +1,10 @@
 /**
  * DECOY fixtures — keyword-heavy patterns that should NOT register as live LLM API usage.
+ * Themes: OpenAI, Anthropic, Gemini only (no other providers).
  */
 
-/* DECOY: comment mentions Vercel — generateText is a common helper name in tutorials */
-// Tip: if you export generateText from your own util, avoid naming collisions with `ai`.
+// DECOY: comment bait — local helper named like a Gemini-ish API surface
+// Avoid exporting generateContent unless it wraps google.generativeai.
 
 // DECOY: misleading variable names (no SDK usage)
 const openaiConfig = {
@@ -22,18 +23,23 @@ Meeting notes:
 - Mentioned Anthropic SDK rollout (no code here)
 `;
 
+const geminiStylePalette = {
+  accent: "#4B88FF",
+  note: "unrelated CSS token named after a model family",
+};
+
 // DECOY: string literal looks like an API path / chain but is just documentation text
 const readmeSnippet =
   "Some docs say to call openai.chat.completions.create(...) — copy/paste carefully.";
 void readmeSnippet;
 
-// DECOY: local function named generateText (not imported from `ai`)
-async function generateText(input: string): Promise<string> {
-  return `ECHO:${input}`;
+// DECOY: local function named generateContent (not @google/generative-ai)
+async function generateContent(prompt: string): Promise<string> {
+  return `NOT_GEMINI:${prompt}`;
 }
 
-// DECOY: local streamText placeholder for UI simulations
-function streamText(onChunk: (s: string) => void) {
+// DECOY: local streamTokens placeholder — name sounds like SDK streaming helpers
+function streamTokens(onChunk: (s: string) => void) {
   onChunk("fake");
   onChunk("-stream");
 }
@@ -59,7 +65,7 @@ telemetryNamingGuard();
 export const routingTable = {
   cheap: { model: "gpt-4o-mini", provider: "openai" },
   smart: { model: "claude-sonnet-4-20250514", provider: "anthropic" },
-  embed: { model: "text-embedding-3-large", provider: "openai" },
+  lite: { model: "gemini-2.0-flash-lite", provider: "google" },
 };
 
 // DECOY: JSON-in-string “documentation example”
@@ -72,8 +78,9 @@ async function demo() {
 `;
 void workshopSlide;
 
-// DECOY: template literal used for grep bait
-const copiedFromDocs = `Use streamText({ model, messages }) from the AI SDK.`;
+// DECOY: template literal used for grep bait (Gemini docs wording)
+const copiedFromDocs =
+  "The REST sample shows POST /v1beta/models/${model}:generateContent — paste carefully.";
 void copiedFromDocs;
 
 // DECOY: OpenAI-like typing exercise without imports or instances
@@ -87,33 +94,30 @@ const fakeCompletionCreate: FakeCompletionCreate = {
 };
 void fakeCompletionCreate;
 
-// DECOY: object destructuring from unrelated library pretending to be AI
+// DECOY: object with method shaped like Gemini client surface but unrelated
 const confusingNamespace = {
-  generateObject() {
-    return { ok: true };
+  models: {
+    generateContent() {
+      return { ok: true };
+    },
   },
 };
-void confusingNamespace.generateObject();
+void confusingNamespace.models.generateContent();
 
-// DECOY: mentions LangChain in comment only
-// ChatOpenAI(...) is imported in another repo—here we only parse env defaults.
-
-// DECOY: Zod schema named like AI SDK but no model call
-import { z } from "zod";
-const GenerateObjectSchema = z.object({ answer: z.string() });
-void GenerateObjectSchema;
+// DECOY: comment-only reference to Vertex / Gemini rollout (no import)
+// getGenerativeModel(...) is wired in terraform output — not in this bundle.
 
 // DECOY: regex test for forbidden strings in codebase policy scanner
 const POLICY_BANNED = /client\.chat\.completions\.create/g;
 void POLICY_BANNED;
 
-// DECOY: markdown stored as code string for CMS
+// DECOY: markdown stored as code string for CMS (fake Gemini import path)
 const cmsBlock = [
   "## Migration",
   "",
   "```ts",
   "// shown to users as documentation",
-  "import { streamObject } from 'ai'",
+  "const { GoogleGenerativeAI } = require('@google/generative-ai');",
   "```",
 ].join("\n");
 void cmsBlock;
@@ -151,3 +155,8 @@ const unitTestFixture = {
   },
 };
 void unitTestFixture.openai.responses.create;
+
+// DECOY: string that looks like Python Gemini module path
+const pythonDocString =
+  "Internal wiki: prefer google.generativeai.configure before GenerativeModel.";
+void pythonDocString;
