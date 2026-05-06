@@ -1,0 +1,17 @@
+{
+  "name": "scanner-fixtures",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Fixture sources for LLM-call scanner validation (not intended to build or run)",
+  "type": "module",
+  "dependencies": {
+    "@ai-sdk/openai": "^1.0.0",
+    "@anthropic-ai/sdk": "^0.30.0",
+    "@google/genai": "^1.0.0",
+    "@google/generative-ai": "^0.21.0",
+    "@langchain/openai": "^0.3.0",
+    "ai": "^4.0.0",
+    "openai": "^4.0.0",
+    "zod": "^3.23.0"
+  }
+}
