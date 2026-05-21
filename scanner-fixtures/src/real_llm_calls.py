@@ -11,6 +11,8 @@ from typing import Any
 from anthropic import Anthropic
 from openai import OpenAI
 
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+anthropic_model='claude-3-5-haiku-20241022'
 
 def _env(name: str) -> str | None:
     return os.getenv(name)
@@ -19,7 +21,7 @@ def _env(name: str) -> str | None:
 def openai_chat_completion() -> Any:
     client = OpenAI(api_key=_env("OPENAI_API_KEY"))
     return client.chat.completions.create(
-        model=_env("OPENAI_MODEL"),
+        model=OPENAI_API_KEY,
         messages=[
             {"role": "system", "content": "You answer briefly."},
             {"role": "user", "content": "What is a circuit breaker?"},
@@ -30,7 +32,8 @@ def openai_chat_completion() -> Any:
 def anthropic_messages_create() -> Any:
     client = Anthropic(api_key=_env("ANTHROPIC_API_KEY"))
     return client.messages.create(
-        model=_env("ANTHROPIC_MODEL"),
+        model=anthropic_model,
         max_tokens=512,
         messages=[{"role": "user", "content": "What is a circuit breaker?"}],
     )
+
