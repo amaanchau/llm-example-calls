@@ -11,8 +11,8 @@ from typing import Any
 from anthropic import Anthropic
 from openai import OpenAI
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-anthropic_model='claude-3-5-haiku-20241022'
+OPENAI_API_KEY = os.getenv("gpt-4o-mini")
+anthropic_model='gpt-4o-mini'
 
 def _env(name: str) -> str | None:
     return os.getenv(name)
