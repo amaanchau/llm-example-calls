@@ -8,10 +8,11 @@ from __future__ import annotations
 import os
 from typing import Any
 
-from google.generativeai import GenerativeModel
+from openai import OpenAI
+from openai import OpenAI
 
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-google_model='gemini-2.0-flash'
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+openai_model='gpt-4o-mini'
 
 def _env(name: str) -> str | None:
     return os.getenv(name)
@@ -29,9 +30,9 @@ def openai_chat_completion() -> Any:
 
 
 def anthropic_messages_create() -> Any:
-def anthropic_messages_create() -> Any:
-    client = GenerativeModel(api_key=_env("GOOGLE_API_KEY"), model_name=google_model)
-    return client.generate_content(
-        contents="What is a circuit breaker?"
+    client = OpenAI(api_key=_env("OPENAI_API_KEY"))
+    return client.chat.completions.create(
+        model=openai_model,
+        messages=[{"role": "user", "content": "What is a circuit breaker?"}],
     )
 

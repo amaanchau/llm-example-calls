@@ -3,7 +3,7 @@
  * Model IDs come from environment variables only (no literals).
  */
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 
 export async function openaiChatCompletion() {
@@ -17,18 +17,11 @@ export async function openaiChatCompletion() {
   });
 }
 
-export async function anthropicMessagesCreate() {
+export async function anthropicMessagesCreate2() {
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   return client.messages.create({
-    model: process.env.ANTHROPIC_MODEL,
+    model: "claude-opus-4-7",
     max_tokens: 512,
-    messages: [{ role: "user", content: "What is a circuit breaker?" }],
+    messages: [{ role: "user", content: "Whats the weather in Tokyo?" }],
   });
 }
-
-export async function anthropicMessagesCreate2() {
-   const client = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-   return client.getGenerativeModel({ model: "gemini-2.0-flash" }).generateContent({
-      contents: [{ role: "user", parts: [{ text: "Whats the weather in Tokyo?" }] }],
-   });
- }
