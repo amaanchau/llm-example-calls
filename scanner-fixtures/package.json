@@ -2,12 +2,13 @@
   "name": "scanner-fixtures",
   "private": true,
   "version": "0.0.0",
-  "description": "Fixture sources for LLM-call scanner validation (OpenAI, Anthropic, Gemini only)",
+  "description": "Fixture sources for LLM-call scanner validation (OpenAI and Anthropic)",
   "type": "module",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.30.0",
-    "@google/genai": "^1.0.0",
-    "@google/generative-ai": "^0.21.0",
     "openai": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0"
   }
 }
