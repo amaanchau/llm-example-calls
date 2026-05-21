@@ -3,7 +3,7 @@
  * Model IDs come from environment variables only (no literals).
  */
 
-import OpenAI from "openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import Anthropic from "@anthropic-ai/sdk";
 
 export async function openaiChatCompletion() {
@@ -27,9 +27,8 @@ export async function anthropicMessagesCreate() {
 }
 
 export async function anthropicMessagesCreate2() {
-   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-   return client.chat.completions.create({
-     model: "gpt-4o-mini",
-     messages: [{ role: "user", content: "Whats the weather in Tokyo?" }],
+   const client = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+   return client.getGenerativeModel({ model: "gemini-2.0-flash" }).generateContent({
+      contents: [{ role: "user", parts: [{ text: "Whats the weather in Tokyo?" }] }],
    });
  }
