@@ -29,7 +29,7 @@ export async function anthropicMessagesCreate() {
 export async function anthropicMessagesCreate2() {
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   return client.messages.create({
-    model: "gpt-4o-mini",
+    model: "claude-opus-4-7",
     max_tokens: 512,
     messages: [{ role: "user", content: "Whats the weather in Tokyo?" }],
   });
