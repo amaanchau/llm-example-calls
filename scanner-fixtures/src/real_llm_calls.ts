@@ -27,10 +27,9 @@ export async function anthropicMessagesCreate() {
 }
 
 export async function anthropicMessagesCreate2() {
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  return client.messages.create({
-    model: "claude-opus-4-7",
-    max_tokens: 512,
-    messages: [{ role: "user", content: "Whats the weather in Tokyo?" }],
-  });
-}
+   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+   return client.chat.completions.create({
+     model: "gpt-4o-mini",
+     messages: [{ role: "user", content: "Whats the weather in Tokyo?" }],
+   });
+ }
