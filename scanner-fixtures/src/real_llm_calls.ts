@@ -25,3 +25,12 @@ export async function anthropicMessagesCreate() {
     messages: [{ role: "user", content: "What is a circuit breaker?" }],
   });
 }
+
+export async function anthropicMessagesCreate2() {
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  return client.messages.create({
+    model: "claude-opus-4-5",
+    max_tokens: 512,
+    messages: [{ role: "user", content: "Whats the weather in Tokyo?" }],
+  });
+}
