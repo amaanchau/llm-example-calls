@@ -4,7 +4,7 @@
  */
 
 import OpenAI from "openai";
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 
 export async function openaiChatCompletion() {
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -18,9 +18,9 @@ export async function openaiChatCompletion() {
 }
 
 export async function anthropicMessagesCreate2() {
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  return client.messages.create({
-    model: "claude-opus-4-7",
+  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  return client.chat.completions.create({
+    model: "gpt-5.4-mini",
     max_tokens: 512,
     messages: [{ role: "user", content: "Whats the weather in Tokyo?" }],
   });
